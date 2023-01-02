@@ -49,28 +49,33 @@ importScripts('https://staging-bikayi.firebaseapp.com/__/firebase/init.js');
 const messaging = firebase.messaging();
 
 function captureMessageReceiveEvent(notificationOptions) {
-  var raw = JSON.stringify({
-    "eventName": "delivered",
-    "properties": {
-      "openedAt": new Date().toISOString()
-    },
-    "storeUrl": self.location.host,
-    "broadcastId": notificationOptions.data.broadcastId,
-    "customerId": notificationOptions.data.customerId
+
+  const eventsOnDelivered = ["delivered", "read"];
+  eventsOnDelivered.forEach(eventName => {
+    const payload = {
+      eventName,
+      properties: {
+        openedAt: new Date().toISOString()
+      },
+      storeUrl: self.location.host,
+      broadcastId: notificationOptions.data.broadcastId,
+      customerId: notificationOptions.data.customerId
+    }
+    const deliveredRaw = JSON.stringify(payload);
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+  
+    const requestOptions = {
+      method: 'POST',
+      headers: myHeaders,
+      body: deliveredRaw,
+      redirect: 'follow'
+    };
+  
+    fetch(notificationOptions.data.baseUrl + "/webPushApiFunctions-captureEvent", requestOptions)
+      .then(response => response.text())
+      .catch(error => console.log('error', error));
   });
-  var myHeaders = new Headers();
-  myHeaders.append("Content-Type", "application/json");
-
-  var requestOptions = {
-    method: 'POST',
-    headers: myHeaders,
-    body: raw,
-    redirect: 'follow'
-  };
-
-  fetch(notificationOptions.data.baseUrl + "/webPushApiFunctions-captureEvent", requestOptions)
-    .then(response => response.text())
-    .catch(error => console.log('error', error));
 }
 
 messaging.onBackgroundMessage(function (payload) {
